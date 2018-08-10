@@ -66,11 +66,13 @@ def updateHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrd
 
   return highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1
 
-def verifyCompletelyFulfilledIfLimitLowerHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, sourceAmount, sourceToken, targetToken, limit, volume):
+def verifyCompletelyFulfilledIfLimitLowerHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, sourceAmount, sourceToken, targetToken, limit, volume, priceToken1, priceToken2):
 
   highestTouchedOrder = findPairInTokenPairList(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, sourceToken, targetToken)
 
-  valid = if limit < highestTouchedOrder then 1 - (sourceAmount - volume) else 1 fi
+  // Due to rounding rounding (e.g. 3 WEI at price .5), we cannot always completely fulfill this order.
+  // Therefore check that exchanging one more unit would have been larger than the source amount
+  valid = if limit < highestTouchedOrder then if sourceAmount < volume + (priceFromTo(targetToken, sourceToken, priceToken1, priceToken2) / 1000000000000000000) then 1 else 0 fi else 1 fi
   return valid
 
 def checkConstraints(amount1, sourceToken1, targetToken1, limit1, amount2, sourceToken2, targetToken2, limit2, amount3, sourceToken3, targetToken3, limit3, volume1, volume2, volume3, priceToken1, priceToken2):
@@ -113,11 +115,11 @@ def checkConstraints(amount1, sourceToken1, targetToken1, limit1, amount2, sourc
   highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1 = updateHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, sourceToken2, targetToken2, limit2, volume2)
   highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1 = updateHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, sourceToken3, targetToken3, limit3, volume3)
 
-  valid = verifyCompletelyFulfilledIfLimitLowerHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, amount1, sourceToken1, targetToken1, limit1, volume1)
+  valid = verifyCompletelyFulfilledIfLimitLowerHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, amount1, sourceToken1, targetToken1, limit1, volume1, priceToken1, priceToken2)
   valid == 1
-  valid = verifyCompletelyFulfilledIfLimitLowerHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, amount2, sourceToken2, targetToken2, limit2, volume2)
+  valid = verifyCompletelyFulfilledIfLimitLowerHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, amount2, sourceToken2, targetToken2, limit2, volume2, priceToken1, priceToken2)
   valid == 1
-  valid = verifyCompletelyFulfilledIfLimitLowerHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, amount3, sourceToken3, targetToken3, limit3, volume3)
+  valid = verifyCompletelyFulfilledIfLimitLowerHighestTouchedOrder(highestTouchedOrderToken0Token1, highestTouchedOrderToken0Token2, highestTouchedOrderToken1Token0, highestTouchedOrderToken1Token2, highestTouchedOrderToken2Token0, highestTouchedOrderToken2Token1, amount3, sourceToken3, targetToken3, limit3, volume3, priceToken1, priceToken2)
   valid == 1
 
   return 1 // Could return total volume to maximize for
